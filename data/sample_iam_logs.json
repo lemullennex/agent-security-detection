@@ -1,0 +1,30 @@
+[
+  {
+    "principal": "arn:aws:iam::123456789012:user/agent-runner-1",
+    "role": "arn:aws:iam::123456789012:role/AgentExecutionRole",
+    "source_ip": "10.0.1.45",
+    "event_time": "2026-04-01T09:00:00Z",
+    "session_id": "iam_sess_001"
+  },
+  {
+    "principal": "arn:aws:iam::123456789012:user/agent-runner-1",
+    "role": "arn:aws:iam::123456789012:role/AgentExecutionRole",
+    "source_ip": "10.0.1.45",
+    "event_time": "2026-04-01T09:30:00Z",
+    "session_id": "iam_sess_002"
+  },
+  {
+    "principal": "arn:aws:iam::123456789012:user/agent-runner-1",
+    "role": "arn:aws:iam::123456789012:role/AgentExecutionRole",
+    "source_ip": "10.0.1.45",
+    "event_time": "2026-04-01T10:00:00Z",
+    "session_id": "iam_sess_003"
+  },
+  {
+    "principal": "arn:aws:iam::123456789012:user/agent-runner-1",
+    "role": "arn:aws:iam::123456789012:role/AdminRole",
+    "source_ip": "203.0.113.77",
+    "event_time": "2026-04-01T23:47:00Z",
+    "session_id": "iam_sess_004"
+  }
+]

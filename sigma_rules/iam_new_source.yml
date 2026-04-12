@@ -1,0 +1,42 @@
+title: IAM Role Assumption from New Source IP
+id: a3f2c1d4-8e7b-4f9a-b2c3-d4e5f6a7b8c9
+status: experimental
+description: >
+  Detects when an IAM principal assumes a role from a source IP address
+  that has not been previously observed for that principal. This pattern
+  can indicate credential theft, lateral movement, or a compromised agent
+  operating outside its expected network context.
+references:
+  - https://atlas.mitre.org
+  - https://owasp.org/www-project-top-10-for-large-language-model-applications
+author: Lauren Mullennex
+date: 2026-04-03
+tags:
+  - attack.credential_access
+  - attack.lateral_movement
+  - attack.t1078
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    eventName: AssumeRole
+  filter_known_ips:
+    # In production this filter would reference a dynamic lookup table
+    # of known source IPs per principal, updated on a rolling 30-day window.
+    sourceIPAddress|contains:
+      - '10.'
+      - '172.'
+      - '192.168.'
+  condition: selection and not filter_known_ips
+falsepositives:
+  - Legitimate access from a new office location or VPN endpoint
+  - First-time access from a new developer machine
+  - Automated pipeline running from a newly provisioned instance
+fields:
+  - userIdentity.principalId
+  - userIdentity.arn
+  - sourceIPAddress
+  - requestParameters.roleArn
+  - eventTime
+level: medium

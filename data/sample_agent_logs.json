@@ -1,0 +1,172 @@
+[
+  {
+    "agent_id": "agent_1",
+    "task_type": "research",
+    "tool_name": "retrieval",
+    "tool_call_count": 1,
+    "documents_retrieved": 5,
+    "data_source": "internal_kb",
+    "session_id": "sess_001",
+    "timestamp": "2026-03-25T10:00:00Z"
+  },
+  {
+    "agent_id": "agent_1",
+    "task_type": "research",
+    "tool_name": "retrieval",
+    "tool_call_count": 1,
+    "documents_retrieved": 4,
+    "data_source": "internal_kb",
+    "session_id": "sess_002",
+    "timestamp": "2026-03-26T10:05:00Z"
+  },
+  {
+    "agent_id": "agent_1",
+    "task_type": "research",
+    "tool_name": "retrieval",
+    "tool_call_count": 1,
+    "documents_retrieved": 6,
+    "data_source": "internal_kb",
+    "session_id": "sess_003",
+    "timestamp": "2026-03-27T10:10:00Z"
+  },
+  {
+    "agent_id": "agent_1",
+    "task_type": "research",
+    "tool_name": "retrieval",
+    "tool_call_count": 1,
+    "documents_retrieved": 5,
+    "data_source": "internal_kb",
+    "session_id": "sess_003b",
+    "timestamp": "2026-03-28T10:10:00Z"
+  },
+  {
+    "agent_id": "agent_1",
+    "task_type": "research",
+    "tool_name": "retrieval",
+    "tool_call_count": 2,
+    "documents_retrieved": 5,
+    "data_source": "internal_kb",
+    "session_id": "sess_003c",
+    "timestamp": "2026-03-29T10:10:00Z"
+  },
+  {
+    "agent_id": "agent_1",
+    "task_type": "research",
+    "tool_name": "retrieval",
+    "tool_call_count": 8,
+    "documents_retrieved": 30,
+    "data_source": "internal_kb",
+    "session_id": "sess_004",
+    "timestamp": "2026-04-01T10:15:00Z"
+  },
+  {
+    "agent_id": "agent_2",
+    "task_type": "structured_extraction",
+    "tool_name": "parser",
+    "tool_call_count": 1,
+    "documents_retrieved": 0,
+    "data_source": "invoice_db",
+    "session_id": "sess_005",
+    "timestamp": "2026-03-25T11:00:00Z"
+  },
+  {
+    "agent_id": "agent_2",
+    "task_type": "structured_extraction",
+    "tool_name": "parser",
+    "tool_call_count": 1,
+    "documents_retrieved": 0,
+    "data_source": "invoice_db",
+    "session_id": "sess_006",
+    "timestamp": "2026-03-26T11:05:00Z"
+  },
+  {
+    "agent_id": "agent_2",
+    "task_type": "structured_extraction",
+    "tool_name": "parser",
+    "tool_call_count": 1,
+    "documents_retrieved": 0,
+    "data_source": "invoice_db",
+    "session_id": "sess_006b",
+    "timestamp": "2026-03-27T11:05:00Z"
+  },
+  {
+    "agent_id": "agent_2",
+    "task_type": "structured_extraction",
+    "tool_name": "parser",
+    "tool_call_count": 1,
+    "documents_retrieved": 0,
+    "data_source": "invoice_db",
+    "session_id": "sess_006c",
+    "timestamp": "2026-03-28T11:05:00Z"
+  },
+  {
+    "agent_id": "agent_2",
+    "task_type": "structured_extraction",
+    "tool_name": "parser",
+    "tool_call_count": 1,
+    "documents_retrieved": 0,
+    "data_source": "invoice_db",
+    "session_id": "sess_006d",
+    "timestamp": "2026-03-29T11:05:00Z"
+  },
+  {
+    "agent_id": "agent_2",
+    "task_type": "structured_extraction",
+    "tool_name": "parser",
+    "tool_call_count": 7,
+    "documents_retrieved": 0,
+    "data_source": "invoice_db",
+    "session_id": "sess_007",
+    "timestamp": "2026-04-01T11:10:00Z"
+  },
+  {
+    "agent_id": "agent_3",
+    "task_type": "research",
+    "tool_name": "retrieval",
+    "tool_call_count": 2,
+    "documents_retrieved": 8,
+    "data_source": "public_web",
+    "session_id": "sess_008",
+    "timestamp": "2026-03-25T12:00:00Z"
+  },
+  {
+    "agent_id": "agent_3",
+    "task_type": "research",
+    "tool_name": "retrieval",
+    "tool_call_count": 2,
+    "documents_retrieved": 9,
+    "data_source": "public_web",
+    "session_id": "sess_009",
+    "timestamp": "2026-03-26T12:05:00Z"
+  },
+  {
+    "agent_id": "agent_3",
+    "task_type": "research",
+    "tool_name": "retrieval",
+    "tool_call_count": 2,
+    "documents_retrieved": 7,
+    "data_source": "public_web",
+    "session_id": "sess_010",
+    "timestamp": "2026-03-27T12:10:00Z"
+  },
+  {
+    "agent_id": "agent_3",
+    "task_type": "research",
+    "tool_name": "retrieval",
+    "tool_call_count": 2,
+    "documents_retrieved": 8,
+    "data_source": "public_web",
+    "session_id": "sess_011",
+    "timestamp": "2026-03-28T12:10:00Z"
+  },
+  {
+    "agent_id": "agent_3",
+    "task_type": "research",
+    "tool_name": "retrieval",
+    "tool_call_count": 2,
+    "documents_retrieved": 9,
+    "data_source": "public_web",
+    "session_id": "sess_012",
+    "timestamp": "2026-03-29T12:10:00Z"
+  }
+]
