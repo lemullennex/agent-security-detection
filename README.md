@@ -1,73 +1,207 @@
-# AI Security Assurance
+# Detecting Unsafe Agent Behavior in Production GenAI Systems
 
-Security work for LLM systems tends to split into two separate conversations.
+Most detection systems focus on infrastructure signals like IAM activity and API calls. In agentic systems, the primary risk surface is behavioral: how the model selects tools, accesses data, and evolves decisions across a workflow.
 
-One is pre-deployment: can the system resist the attacks it is likely to face?
-The other is post-deployment: if something goes wrong in production, can you tell from the logs what happened and why?
+This repository implements detection logic for agent behavior in production-style GenAI systems, with supporting IAM anomaly detection as a secondary signal, and adversarial evaluation tooling for pre-deployment testing. The goal is not complexity. It is detection logic and evaluation tooling that is simple, explainable, and aligned to how these systems actually fail.
 
-This repo is organized around both sides of that problem.
+---
 
 ## Modules
 
-### `agent_behavioral_detection/`
-Behavioral detection for production agentic systems.
+### `detection/` — Production behavioral detection
 
-This module focuses on what compromise or misuse looks like once an agent is already running. It builds lightweight behavioral baselines and flags deviations such as unexpected tool usage, unusual retrieval volume, or access to data sources that are out of character for a given agent.
+Detection logic for live agentic systems. Flags behavioral anomalies that indicate compromise, prompt injection, or misuse before they surface in infrastructure logs.
 
-The goal is operational visibility. If an agent is manipulated through prompt injection, retrieval poisoning, or misuse of permissions, the detection layer should give you a concrete signal that something abnormal happened.
+### `adversarial_eval/` — Pre-deployment adversarial evaluation
 
-### `adversarial_eval/`
-Adversarial evaluation for LLM systems and lightweight agents.
+Adversarial testing for LLM systems and lightweight agents. Tests whether a system resists attack before it reaches production, including whether hostile content embedded in documents, emails, or transcripts can push an agent toward unauthorized actions.
 
-This module focuses on whether a system resists attack before deployment. It tests prompt-level injection resistance across five attack categories and agent-level behavioral failures where malicious content attempts to redirect the system toward unauthorized actions.
+---
 
-The current suite covers:
-- direct injection
-- roleplay framing
-- indirect injection
-- many-shot attacks
-- token manipulation
-- agent attack simulation against tool and data boundaries
+## System Context
 
-The output is a structured report that can be used in CI to catch regressions after model changes, system prompt edits, or pipeline updates.
+The detection logic assumes an agentic system with tool calling, retrieval over internal data sources, and multi-step execution traces per request. Sample logs simulate agent execution traces including: agent_id, tool_name, documents_retrieved, data_source, timestamp, and task_type.
 
-## Why both belong together
+---
 
-These modules solve related but different problems.
+## Detection Approach
 
-Adversarial evaluation asks whether the system holds up when you attack it on purpose.
-Behavioral detection asks what compromise looks like if something still gets through.
+Detection is structured in two layers. Agent behavioral detection is primary. IAM detection is secondary and usually a lagging indicator compared to behavioral signals.
 
-One is pre-deployment assurance.
-The other is production detection.
+### Agent Behavioral Detection
 
-Together they reflect the same design principle: the real security boundary in an AI system is not the model by itself. It is what the system is allowed to do, what it can access, and whether you can observe its behavior well enough to investigate failures.
+**Tool usage anomaly** — detects unexpected spikes in tool usage relative to the agent's established baseline for that task type. Baselines are computed per agent ID and per task type. A call count that is normal for a research workflow would flag for a structured extraction task.
 
-## How I think about the boundary
+```python
+if tool_call_count > baseline_mean + 2 * std_dev:
+    flag = "anomalous_tool_usage"
+```
 
-For LLM systems, the most important question is rarely whether the model can generate a bad sentence. The more important question is whether hostile content can push the system toward the wrong action.
+This is often an early indicator of prompt injection, where an injected instruction causes the agent to repeatedly expand its actions beyond the expected workflow.
 
-That can mean:
-- using a tool that was not in scope
-- accessing data that was not requested
-- taking an external action without a valid user intent
-- shifting from retrieval or summarization into side effects like outbound email or privileged lookups
+In one observed pattern, an agent that normally called a retrieval tool once per request began calling it five to six times in sequence. Nothing failed at the infrastructure level. Responses appeared correct. But the behavior had changed. This indicated a prompt injection attempt causing the agent to expand its search scope. Without behavioral detection, it would not have been visible.
 
-That is the thread connecting both modules in this repo.
+**Retrieval expansion** — detects when an agent retrieves significantly more documents than expected for the query type and task context.
 
-## Recommended use
+```python
+if documents_retrieved > expected_range:
+    flag = "retrieval_expansion"
+```
 
-Use `adversarial_eval/` during development, before releases, and in CI whenever you update:
-- model versions
-- system prompts
-- tool access rules
-- retrieval pipelines
-- agent policies
+This can indicate prompt injection attempts that expand search scope, misaligned query planning, or data exposure risk through over-retrieval.
 
-Use `agent_behavioral_detection/` in production to monitor live systems for behavior that departs from known-good baselines.
+**New data source access** — detects when an agent accesses a data source not in the known source list for that agent ID. In production, agents should have well-defined retrieval boundaries. Access to a new source indicates configuration drift or an active attempt to expand data access.
 
-## Current state
+```python
+if data_source not in known_sources[agent_id]:
+    flag = "new_data_access"
+```
 
-This repo is intentionally lightweight. The point is not to build a giant platform. The point is to make the security logic easy to inspect, explain, and extend.
+### IAM Anomaly Detection
 
-That keeps the signal high during reviews and makes it easier to adapt the tests and detections to a real product surface.
+Detects unusual IAM role usage patterns including role assumption from a new source IP, after-hours assumptions, and role chains inconsistent with defined trust relationships.
+
+```python
+if role not in known_roles[user] or source_ip not in known_ips[user]:
+    flag = "iam_anomaly"
+```
+
+The Sigma rule implementation is in `sigma_rules/iam_new_source.yml`.
+
+### Unified Detection Pipeline
+
+`detection/pipeline/run_detection.py` runs all signals together and correlates results by session, producing a unified report with severity scoring and likely cause inference.
+
+```
+Session: sess_004
+  Signals:
+    - anomalous_tool_usage (z-score: 4.20)
+    - retrieval_expansion (z-score: 3.84)
+  Likely cause: prompt injection expanding retrieval scope
+  Severity: HIGH
+```
+
+---
+
+## Adversarial Evaluation
+
+The `adversarial_eval/` module tests whether a system resists attack before deployment.
+
+Most prompt injection projects stop at the model response. In production, the more serious failure is behavioral: the model reads hostile content and takes the wrong action — calls a tool it should not, sends an email nobody asked for, accesses data outside its scope.
+
+The evaluator tests two layers:
+
+**Prompt-level failures** across five attack categories:
+- Direct injection
+- Roleplay framing
+- Indirect injection — malicious instructions hidden in documents, emails, transcripts, or retrieved context
+- Many-shot attacks
+- Token manipulation
+
+**Agent-level failures** — three scenarios where hostile content attempts to redirect a simulated agent toward unauthorized actions:
+- Email content that tries to trigger outbound document exfiltration
+- Retrieved context that tries to coerce access to sensitive HR data
+- Meeting transcript injection that tries to trigger a side-channel email
+
+The evaluator does not let the model execute tools directly. It asks the model to propose an action plan in JSON, then evaluates those proposed actions against a policy baseline. That separation between what the model wants to do and what the system allows is the assurance boundary the evaluator tests.
+
+See `adversarial_eval/README.md` for full documentation and usage.
+
+---
+
+## Design Principles
+
+This repository intentionally uses simple statistical thresholds rather than complex models. These signals are high-recall by design. In production they would be combined with contextual signals like task type, user role, and session history to reduce false positives before alerting. Detection logic should be explainable enough to walk through line by line in an incident review.
+
+The same principle applies to the adversarial evaluation module. When a finding fires, you should be able to show exactly what triggered it and why it matters in plain language.
+
+---
+
+## Repository Structure
+
+```
+agent-security-detection/
+  data/
+    sample_agent_logs.json
+    sample_iam_logs.json
+  detection/
+    agent_behavior/
+      tool_anomaly.py
+      retrieval_anomaly.py
+      sequence_anomaly.py
+    iam/
+      role_anomaly.py
+    evaluation/
+      metrics.py
+    pipeline/
+      run_detection.py
+  sigma_rules/
+    iam_new_source.yml
+  adversarial_eval/
+    prompt_injection_tester.py
+    README.md
+```
+
+---
+
+## How to Run
+
+### Behavioral Detection
+
+```bash
+# Run individual detectors
+python detection/agent_behavior/tool_anomaly.py
+python detection/agent_behavior/retrieval_anomaly.py
+python detection/agent_behavior/sequence_anomaly.py
+python detection/iam/role_anomaly.py data/sample_iam_logs.json
+python detection/evaluation/metrics.py
+
+# Run unified pipeline (recommended)
+python detection/pipeline/run_detection.py
+```
+
+### Adversarial Evaluation
+
+```bash
+pip install anthropic
+export ANTHROPIC_API_KEY=your_key_here
+python adversarial_eval/prompt_injection_tester.py
+```
+
+---
+
+## What to Expect from the Detection Pipeline
+
+- `tool_anomaly.py` flags sess_004 and sess_007
+- `retrieval_anomaly.py` flags sess_004
+- `sequence_anomaly.py` prints no anomalies (expected — all agents access known sources)
+- `role_anomaly.py` flags iam_sess_004 on both unknown role and unknown source IP
+- `run_detection.py` correlates sess_004 signals and scores severity
+
+---
+
+## What This Demonstrates
+
+- How agentic systems fail in production
+- Why behavioral detection is required beyond IAM monitoring
+- How to design simple, explainable detection signals
+- How to correlate multiple signals into an attack narrative
+- How to reason about false positives, thresholds, and production tradeoffs
+- How to test LLM systems adversarially before deployment
+- Why behavioral failures matter more than model response failures in production
+
+---
+
+## Background
+
+This project grew out of work designing and evaluating security architectures for production agentic AI systems across enterprise deployments. The patterns here reflect failure modes observed directly: agents that expand their retrieval scope under injected instructions, tool usage that indicates workflow hijacking, and IAM assumptions that standard monitoring treats as normal because the credentials are valid.
+
+The adversarial evaluation module grew out of the same observation from the other direction — that pre-deployment testing rarely asks the right question. The question is not whether the model says something strange. It is whether the system takes the wrong action.
+
+---
+
+## Author
+
+Lauren Mullennex  
+Senior GenAI Solutions Architect, AWS  
+Focused on agentic AI security, detection engineering, and production GenAI systems
